@@ -15,6 +15,7 @@
 
 (define test (exp (la (list "x" "y") (exp (fn "plus" 2) (list "x" "y"))) '(1 2)))
 (define test2 (exp (fn "-" 2) (list (exp (fn "+" 2) '()))))
+(define test3 (exp (fn "-" 2) (list (exp (la (list "x") (exp (fn "+" 2) '(1 "x"))) '()))))
 
 (define pfuns (list (fn "plus" 2)))
 #;(define funs (list (list "+" 2)))
@@ -34,7 +35,7 @@
 (define (expr-args e) ; (+ (+)) -> ([x y z] -> (+ (+ x y) z))
                    ; ((fn + 2) ((fn + 2)))
                    ; make lambda out of functions.
-  (foldr + (args-needed e) (map expr-args (exp-t e))))
+  (if (exp? e) (foldr + (args-needed e) (map expr-args (exp-t e))) 0))
 (define (exp->la e) (let ([x (for/list ([i (expr-args e)]) (list->string (list #\a (integer->char (+ i 48)))))])
   (la x (exp (exp-h e) (app-args (exp-t e) x '())))))
 (define (app-args t x n)
@@ -43,7 +44,7 @@
          (begin (displayln "yes")
          (app-args (cdr t) (drop x (args-needed (car t))) 
                    (push n (exp (exp-h (car t)) (append (exp-t (car t)) (take x (args-needed (car t))))))))]
-        [else (app-args (cdr t) x n)]))
+        [else (app-args (cdr t) x (push n (car t)))]))
 
 ; returns false if simplest form is not achievable.
 #;(define (app-la h t) (simplify (la-cont h) (map (λ (x y) (list x y)) (la-ins h) t)))
