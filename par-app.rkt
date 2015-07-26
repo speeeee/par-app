@@ -20,11 +20,18 @@
 (define pfuns (list (fn "plus" 2)))
 #;(define funs (list (list "+" 2)))
 
+(define (ins q) (if (fn? q) (fn-ins q) (length (la-ins q))))
+
 ; test to see if arg `e' is in simplest form. 
 (define (app? e) (if (not (exp? e)) #f (= (length (la-ins (exp-h e))) (length (exp-t e)))))
 (define (args-needed e) (if (not (exp? e)) 0 (- ((if (fn? (exp-h e)) fn-ins (λ (x) (length (la-ins x)))) (exp-h e)) (length (exp-t e)))))
           #;(map (λ (x) (cond [(fn? (exp-h e)) (- (fn-ins (exp-h e)) (map args-needed (exp-t e)))]
                             [(exp? (exp-h e)) (- (la-ins ()))])))
+
+; (fork (list (fn "+" 2) (fn "-" 2)))
+(define (fork t) (let ([z (mk-args (ins (car t)))])
+  (la z (map (λ (x) (exp x z)) t))))
+; fork!
 
 #;(define (exp->la e) (la '() (e->l (la-cont (exp-h e)) (map (λ (x y) (list x y)) (la-ins (exp-h e)) (exp-t e)))))
 #;(define (e->l c vs)
@@ -36,7 +43,8 @@
                    ; ((fn + 2) ((fn + 2)))
                    ; make lambda out of functions.
   (if (exp? e) (foldr + (args-needed e) (map expr-args (exp-t e))) 0))
-(define (exp->la e) (let ([x (for/list ([i (expr-args e)]) (list->string (list #\a (integer->char (+ i 48)))))])
+(define (mk-args n) (for/list ([i n]) (list->string (list #\a (integer->char (+ i 48))))))
+(define (exp->la e) (let ([x (mk-args (expr-args e))])
   (la x (exp (exp-h e) (app-args (exp-t e) x '())))))
 (define (app-args t x n)
   (cond [(empty? t) (append n x)]
