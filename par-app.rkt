@@ -16,6 +16,7 @@
 (define test (exp (la (list "x" "y") (exp (fn "plus" 2) (list "x" "y"))) '(1 2)))
 (define test2 (exp (fn "-" 2) (list (exp (fn "+" 2) '()))))
 (define test3 (exp (fn "-" 2) (list (exp (la (list "x") (exp (fn "+" 2) '(1 "x"))) '()))))
+(define test4 (parse "A:(A B)"))
 
 (define pfuns (list (fn "plus" 2)))
 #;(define funs (list (list "+" 2)))
@@ -66,7 +67,7 @@
             [else (write ls)])))
 
 (define (string-split-spec str) (map list->string (filter (λ (x) (not (empty? x))) (splt (string->list str) '(())))))
-(define (splt str n) (let ([q (if (empty? str) #f (member (car str) (list #\( #\) #\{ #\} #\[ #\] #\! #\; #\,)))])
+(define (splt str n) (let ([q (if (empty? str) #f (member (car str) (list #\( #\) #\{ #\} #\[ #\] #\:)))])
   (cond [(empty? str) n] ;[(empty? n) (splt (cdr str) (if (char-whitespace? (car str)) n (push n (car str))))]
         [(empty? (pop n)) (splt (cdr str) (if (char-whitespace? (car str)) 
                                               n (if q (append n (list (list (car str)) '())) (push (ret-pop n) (push (pop n) (car str))))))]
@@ -88,10 +89,18 @@
   (cond [(empty? stk) n]
         [(equal? (v-type (car stk)) "$close") (let* ([c (case (v-val (car stk)) [("}") "{"] [("]") "["] [(")") "("] [else '()])]
                                                      [l (λ (x) (not (equal? (v-val x) c)))])
-           (cp (cdr stk) (push (ret-pop (reverse (dropf (reverse n) l))) (v (reverse (takef (reverse n) l))
-                                                                            (case c [("{") "Union"] [("[") "List"] [("(") "PList"] [else '()])))))]
+           (cp (cdr stk) (push (ret-pop (reverse (dropf (reverse n) l))) (reverse (takef (reverse n) l)))))]
         [else (cp (cdr stk) (push n (car stk)))]))
+
+(define (mk-exprs lst) (if (list? lst) (me lst '()) lst))
+(define (me lst n)
+  (cond [(empty? lst) n]
+        [(and (v? (car lst)) (equal? (v-val (car lst)) ":")) 
+         (me (cddr lst) (push (ret-pop n) (exp (mk-exprs (pop n)) (mk-exprs (cadr lst)))))]
+        [else (me (cdr lst) (push n (car lst)))]))
 
 (define (main)
   (let* ([e (check-parens (map lex (string-split-spec (read-line))))])
     (write-spec e)))
+
+(define (parse str) (mk-exprs (check-parens (map lex (string-split-spec str)))))
