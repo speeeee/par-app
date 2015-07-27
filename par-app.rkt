@@ -16,7 +16,7 @@
 (define test (exp (la (list "x" "y") (exp (fn "plus" 2) (list "x" "y"))) '(1 2)))
 (define test2 (exp (fn "-" 2) (list (exp (fn "+" 2) '()))))
 (define test3 (exp (fn "-" 2) (list (exp (la (list "x") (exp (fn "+" 2) '(1 "x"))) '()))))
-(define test4 (parse "A:(A B)"))
+;(define test4 (parse "A:(A B)"))
 
 (define pfuns (list (fn "plus" 2)))
 #;(define funs (list (list "+" 2)))
@@ -92,11 +92,11 @@
            (cp (cdr stk) (push (ret-pop (reverse (dropf (reverse n) l))) (reverse (takef (reverse n) l)))))]
         [else (cp (cdr stk) (push n (car stk)))]))
 
-(define (mk-exprs lst) (if (list? lst) (me lst '()) lst))
+(define (mk-exprs lst) (if (list? lst) (me (reverse lst) '()) lst))
 (define (me lst n)
   (cond [(empty? lst) n]
         [(and (v? (car lst)) (equal? (v-val (car lst)) ":")) 
-         (me (cddr lst) (push (ret-pop n) (exp (mk-exprs (pop n)) (mk-exprs (cadr lst)))))]
+         (me (cddr lst) (push (ret-pop n) (exp (mk-exprs (cadr lst)) (mk-exprs (pop n)))))]
         [else (me (cdr lst) (push n (car lst)))]))
 
 (define (main)
