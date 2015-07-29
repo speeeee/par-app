@@ -13,13 +13,17 @@
 (define (ret-pop stk) (reverse (cdr (reverse stk))))
 (define (strcar str) (car (string->list str)))
 
-(define test (exp (la (list "x" "y") (exp (fn "plus" 2) (list "x" "y"))) '(1 2)))
+(define test (exp (la (list "x" "y") (list (exp (fn "-" 2) (list "x" "y")) (exp (fn "+" 2) (list "x" "y")))) '(1 2)))
 (define test2 (exp (fn "-" 2) (list (exp (fn "+" 2) '()))))
 (define test3 (exp (fn "-" 2) (list (exp (la (list "x") (exp (fn "+" 2) '(1 "x"))) '()))))
-(define test4 "+:(+ -):(1 2)")
+(define test4 "+:(+ -):(1 2)") (define test5 "rev:((+ -):(1 2))")
+(define test6 "def:(super-+ +:(+:()))") (define test7 "la:((x y) +:(x y))")
+(define test8 "def:(++- +:((+ -):()))")
 
-(define pfuns (list (fn "+" 2)
-                    (fn "-" 2)))
+(define pfuns (list (fn "+" 2) (fn "-" 2)
+                    (fn "rev" 1) (fn "def" 2)
+                    (fn "la" 2)))
+(define spec (list "def" "la"))
 #;(define funs (list (list "+" 2)))
 
 (define (ins q) (if (fn? q) (fn-ins q) (length (la-ins q))))
@@ -56,10 +60,12 @@
                    (push n (exp (exp-h (car t)) (append (exp-t (car t)) (take x (args-needed (car t))))))))]
         [else (app-args (cdr t) x (push n (car t)))]))
 
-; returns false if simplest form is not achievable.
-#;(define (app-la h t) (simplify (la-cont h) (map (λ (x y) (list x y)) (la-ins h) t)))
-#;(define (simplify c v)
-  (cond [(exp? c) (map simplify (exp-t c))]))
+(define (app-la e) (al (la-cont (exp-h e)) (map (λ (x y) (list x y)) (la-ins (exp-h e)) (exp-t e))))
+(define (al l y)
+  (cond [(exp? l) (exp (exp-h l) (map (λ (x) (al x y)) (exp-t l)))]
+        [(list? l) (map (λ (x) (al x y)) l)]
+        [(member l (map car y)) (second (findf (λ (x) (equal? l (car x))) y))]
+        [else l]))
 
 (define (write-spec ls) 
   (if (list? ls) (begin (display "(") (map write-spec ls) (display ")"))
@@ -101,20 +107,30 @@
         [else (cp (cdr stk) (push n (car stk)))]))
 (define (rem-plist a) (if (equal? (v-type a) "PList") (map rem-plist (v-val a)) a))
 
+(define (app-spec e)
+  (case (fn-name (exp-h e))
+    [("def") (let ([x (if (la? (second (exp-t e))) (second (exp-t e)) (exp->la (second (exp-t e))))])
+               (set! pfuns (push pfuns (fn (car (exp-t e)) (length (la-ins x))))) (displayln x) '())]
+    [("la") (la (car (exp-t e)) (second (exp-t e)))]
+    [else e]))
+
 (define (mk-exprs lst) (if (list? lst) (me (reverse lst) '()) lst))
 (define (me lst n)
-  (cond [(empty? lst) n]
+  (cond [(empty? lst) (reverse n)]
         [(list? (car lst)) (me (cdr lst) (push n (mk-exprs (car lst))))]
-        [(and (v? (car lst)) (equal? (v-val (car lst)) ":"))
-         (me (cddr lst) (push (ret-pop n) (exp (let ([x (mk-exprs (cadr lst))])
-                                                 (if (list? x) (fork x) x)) (pop n))))]
+        [#;(and (v? (car lst)) (equal? (v-val (car lst)) ":"))
+         (equal? (car lst) ":")
+         (me (cddr lst) (push (ret-pop n) (let ([e (exp (let ([x (mk-exprs (cadr lst))])
+                                                           (if (list? x) (fork x) x)) (pop n))])
+                          (if (la? (exp-h e)) (app-la e) 
+                              (if (member (fn-name (exp-h e)) spec) (app-spec e) e)))))]
         [else (me (cdr lst) (push n (car lst)))]))
 
 (define (sym->fun l)
   (cond [(and (v? l) (equal? (v-type l) "Sym")) (s->f l)]
         [(list? l) (map sym->fun l)] [else l]))
 (define (s->f s)
- (let ([x (findf (λ (y) (equal? (fn-name y) (v-val s))) pfuns)]) (if x x s)))
+ (let ([x (findf (λ (y) (equal? (fn-name y) (v-val s))) pfuns)]) (if x x (v-val s))))
 
 (define (main)
   (let* ([e (check-parens (map lex (string-split-spec (read-line))))])
