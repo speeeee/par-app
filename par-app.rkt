@@ -7,6 +7,8 @@
 ; these functions cannot be partially applied at top-level.
 (struct exp (h t) #:transparent) ; LISP-style s-expression. (lambda . args-list)
 (struct v (val type) #:transparent)
+
+(define c (current-output-port))
   
 (define (push stk elt) (append stk (list elt)))
 (define (pop stk) (car (reverse stk)))
@@ -18,9 +20,9 @@
 (define test3 (exp (fn "-" 2) (list (exp (la (list "x") (exp (fn "+" 2) '(1 "x"))) '()))))
 (define test4 "+:(+ -):(1 2)") (define test5 "rev:((+ -):(1 2))")
 (define test6 "def:(super-+ +:(+:()))") (define test7 "la:((x y) +:(x y))")
-(define test8 "def:(++- +:((+ -):()))")
+(define test8 "def:(++- +:((+ -):()))") (define test9 "def:(la+ la:((x y) +:(x y)))")
 
-(define pfuns (list (fn "+" 2) (fn "-" 2)
+(define pfuns (list (fn "+" 2) (fn "-" 2) (fn "*" 2)
                     (fn "rev" 1) (fn "def" 2)
                     (fn "la" 2)))
 (define spec (list "def" "la"))
@@ -110,7 +112,8 @@
 (define (app-spec e)
   (case (fn-name (exp-h e))
     [("def") (let ([x (if (la? (second (exp-t e))) (second (exp-t e)) (exp->la (second (exp-t e))))])
-               (set! pfuns (push pfuns (fn (car (exp-t e)) (length (la-ins x))))) (displayln x) '())]
+               (set! pfuns (push pfuns (fn (car (exp-t e)) (length (la-ins x))))) 
+               (out-f (car (exp-t e)) x c) '())]
     [("la") (la (car (exp-t e)) (second (exp-t e)))]
     [else e]))
 
@@ -132,8 +135,27 @@
 (define (s->f s)
  (let ([x (findf (λ (y) (equal? (fn-name y) (v-val s))) pfuns)]) (if x x (v-val s))))
 
-(define (main)
-  (let* ([e (check-parens (map lex (string-split-spec (read-line))))])
-    (write-spec e)))
+(define (out-f n e o)
+  (fprintf o "def ~a(" n)
+  (map (λ (x) (fprintf o "~a," x)) (ret-pop (la-ins e)))
+  (fprintf o "~a) {~n" (pop (la-ins e))) (out-pseu (la-cont e) o) (fprintf o "; }~n"))
+(define (out-la l o)
+  (fprintf o "(~a -> " (la-ins l)) (out-pseu (la-cont l) o) (fprintf o ")"))
+(define (out-expr e o)
+  (if (fn? (exp-h e)) (fprintf o "~a(" (fn-name (exp-h e)))
+      (begin (out-la (exp-h e) o) (fprintf o "(")))
+  (map (λ (x) (begin (out-pseu x o) (fprintf o ","))) (ret-pop (exp-t e)))
+  (out-pseu (pop (exp-t e)) o) (fprintf o ")"))
+(define (out-pseu e p)
+  (cond [(list? e) (begin (fprintf p "{") #;(map (λ (x) (out-pseu x p)) e)
+                          (map (λ (x) (begin (out-pseu x p) (fprintf p ","))) (ret-pop e))
+                          (out-pseu (pop e) p) (fprintf p "}"))]
+        [(exp? e) (out-expr e p)]
+        [else (if (v? e) (fprintf p "~a" (v-val e)) (fprintf p "~a" e))]))
 
 (define (parse str) (mk-exprs (map sym->fun (check-parens (map lex (string-split-spec str))))))
+
+(define (main)
+  (display "> ") (let ([x (parse (read-line))])
+    (if (empty? (filter (λ (y) (not (empty? y))) x)) (displayln "EMPTY") (out-pseu x c)) (displayln "") (main)))
+(main)
