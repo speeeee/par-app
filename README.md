@@ -13,4 +13,11 @@ The documentation (DOCS) gives a more in-depth look at the language
 
 As mentioned before, the compiler is written in Racket.  Right now, the compiler outputs pseudo-code that very loosely resembles an untyped C-variant.  This is, of course, subject to change.
 
+# What influenced Par-App?
+
+The main language that influenced Par-App was LISP.  Par-App has a similar list-based structure, where the head of a list is the function and the tail are the arguments.
+
+J, and other point-free languages, were also an influence, as mentioned before.  Concatenative languages (which often are also point-free) were also and influence.
+The syntax of the language also somewhat resembles the syntax of the language, FP, though that is not on purpose.
+
 In general, this project is mainly just for fun, and not much else.

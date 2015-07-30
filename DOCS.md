@@ -80,9 +80,9 @@ Notice that `la` is a function itself taking two arguments.  As mentioned before
 Here is an example of a lambda in use:
 
 ```
-(la:((x) +:(x 1))):(2)
+[la:((x) +:(x 1))]:(2)
 ```
-**NOTE:** there is a small bug here where this will produce `(+:(2 1))` rather than `+:(2 1)`.  This will be fixed soon.
+**NOTE:** the brackets will be explained in the next section.
 
 This is the same as `+:(2 1)`.  In this case, it is somewhat useless.  However, it is possible to create a *function* that increments something by 1.  Luckily, this is easy to do, because in Par-App, functions are just named lambdas:
 
@@ -96,6 +96,26 @@ With this new function, the earlier expression can be written like this:
 
 ```
 inc:(2 1)
+```
+
+# Explicit grouping
+
+Earlier, it was mentioned that all infix operations (that is, anything using `:`, since it is the only infix operator) are right-associative.  This can be explained with this example:
+
+```
+print:+:(1 2)
+```
+
+This is grouped from right-to-left, so `+:(1 2)` is read first, then `print` is applied to the result of that.  Using brackets, the order of evaluation of these can be changed, though changing the order of evaluation has no use with this expression.  In the last section, there was a function call containing brackets.  It can be seen why these are needed when they are taken away:
+
+```
+la:((x) +:(x 1)):(2)
+```
+
+Using right-to-left associativity, an error immediately shows.  The first function-call would be `((x) +:(x 1)):(2)`, which is not correct.  What should be the arguments to `la` are applied to `(2)` instead.  Brackets prevent this error, as with brackets, the `la` is first applied to `((x) +:(x 1))`:
+
+```
+[la:((x) +:(x 1))]:(2)
 ```
 
 # Forks
@@ -126,15 +146,18 @@ The example isn't really practical, nor is it difficult, but it can show some of
 ```
 cons:(+ la:((x y) (rev:(x y)))):(1 2)
 ```
+**NOTE:** `cons` doesn't exist yet.
 
 Notice the use of the lambda to take both arguments and construct a new list for `rev`.  Without a fork, `(1 2)` would need its own variable.
 
 Something to remember is that all functions in a list to be applied are required to have the *same* number of arguments.  The above fork is an example; both `+` and the lambda require two arguments.
 
 Another thing to note is that the compiler actually processes a list of functions being applied to something as calling the function, `fork`, on the list of functions.  `fork` takes the list of functions and produces a lambda out of them that returns the list of results as mentioned before.  `(+ -)` is actually processed as `fork:(+ -)`, and returns 
+
 `la:((x y) (+:(x y) -:(x y)))`.
 
 This is the reason for the somewhat awkward syntax.  In LISP, the expression, `*:(+ -):(1 2)` would be written as 
+
 `(* . ((+ -) 1 2))` given that LISP processed a list of functions in the same way.
 
 Finally, despite being called forks, they do have their differences from forks in languages like J.  Due to everything in J taking at most two arguments, a fork in J can have only two functions, where the result is applied to another 2-argument function.  In Par-App, a fork can have as many functions with as many arguments given that they all have the same amount of arguments.
