@@ -131,10 +131,12 @@ Notice the use of the lambda to take both arguments and construct a new list for
 
 Something to remember is that all functions in a list to be applied are required to have the *same* number of arguments.  The above fork is an example; both `+` and the lambda require two arguments.
 
-Another thing to note is that the compiler actually processes a list of functions being applied to something as calling the function, `fork`, on the list of functions.  `fork` takes the list of functions and produces a lambda out of them that returns the list of results as mentioned before.  `(+ -)` is actually processed as `fork:(+ -)`, and returns `la:((x y) (+:(x y) -:(x y)))`.
+Another thing to note is that the compiler actually processes a list of functions being applied to something as calling the function, `fork`, on the list of functions.  `fork` takes the list of functions and produces a lambda out of them that returns the list of results as mentioned before.  `(+ -)` is actually processed as `fork:(+ -)`, and returns 
+`la:((x y) (+:(x y) -:(x y)))`.
 
-This is the reason for the somewhat awkward syntax.  In LISP, the expression, `*:(+ -):(1 2)` would be written as `(* . ((+ -) 1 2))` given that LISP processed a list of functions in the same way.
+This is the reason for the somewhat awkward syntax.  In LISP, the expression, `*:(+ -):(1 2)` would be written as 
+`(* . ((+ -) 1 2))` given that LISP processed a list of functions in the same way.
 
-Finally, despite being called forks, they do have there differences from forks in languages like J.  Due to everything in J taking at most two arguments, a fork in J can have only two functions, where the result is applied to another 2-argument function.  In Par-App, a fork can have as many functions with as many arguments given that they all have the same amount of arguments.
+Finally, despite being called forks, they do have their differences from forks in languages like J.  Due to everything in J taking at most two arguments, a fork in J can have only two functions, where the result is applied to another 2-argument function.  In Par-App, a fork can have as many functions with as many arguments given that they all have the same amount of arguments.
 
 **NOTE:** this is the end of the documentation for now, but there should be more later.
