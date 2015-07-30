@@ -107,7 +107,8 @@
            (cp (cdr stk) (push (ret-pop (reverse (dropf (reverse n) l))) (v (reverse (takef (reverse n) l))
                                                                             (case c [("{") "Union"] [("[") "List"] [("(") "PList"] [else '()])))))]
         [else (cp (cdr stk) (push n (car stk)))]))
-(define (rem-plist a) (if (equal? (v-type a) "PList") (map rem-plist (v-val a)) a))
+(define (rem-plist a) (if (equal? (v-type a) "PList") (map rem-plist (v-val a))
+                          (if (equal? (v-type a) "List") (v (map rem-plist (v-val a)) "List") a)))
 
 (define (app-spec e)
   (case (fn-name (exp-h e))
@@ -129,8 +130,12 @@
                               (if (member (fn-name (exp-h e)) spec) (app-spec e) e)))))]
         [else (me (cdr lst) (push n (car lst)))]))
 
+(define (br-list l)
+  (if (and (v? l) (equal? (v-type l) "List")) (car (mk-exprs (map br-list (v-val l)))) l))
+
 (define (sym->fun l)
   (cond [(and (v? l) (equal? (v-type l) "Sym")) (s->f l)]
+        [(and (v? l) (equal? (v-type l) "List")) (v (map sym->fun (v-val l)) "List")]
         [(list? l) (map sym->fun l)] [else l]))
 (define (s->f s)
  (let ([x (findf (λ (y) (equal? (fn-name y) (v-val s))) pfuns)]) (if x x (v-val s))))
@@ -153,7 +158,7 @@
         [(exp? e) (out-expr e p)]
         [else (if (v? e) (fprintf p "~a" (v-val e)) (fprintf p "~a" e))]))
 
-(define (parse str) (mk-exprs (map sym->fun (check-parens (map lex (string-split-spec str))))))
+(define (parse str) (mk-exprs (map br-list (map sym->fun (check-parens (map lex (string-split-spec str)))))))
 
 (define (main)
   (display "> ") (let ([x (parse (read-line))])
