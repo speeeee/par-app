@@ -21,6 +21,7 @@
 (define test4 "+:(+ -):(1 2)") (define test5 "rev:((+ -):(1 2))")
 (define test6 "def:(super-+ +:(+:()))") (define test7 "la:((x y) +:(x y))")
 (define test8 "def:(++- +:((+ -):()))") (define test9 "def:(la+ la:((x y) +:(x y)))")
+(define test10 "def:(++- +:#:(+ -))")
 
 (define pfuns (list (fn "+" 2) (fn "-" 2) (fn "*" 2)
                     (fn "rev" 1) (fn "def" 2)
@@ -112,7 +113,8 @@
 ; add function-composition, point-free definitions, and idef (inline def).
 (define (app-spec e)
   (case (fn-name (exp-h e))
-    [("def") (let ([x (if (la? (second (exp-t e))) (second (exp-t e)) (exp->la (second (exp-t e))))])
+    [("def") (let ([x (if (la? (second (exp-t e))) (second (exp-t e)) (la (mk-args (ins (second (exp-t e))))
+                                                                          (exp (second (exp-t e)) (mk-args (ins (second (exp-t e)))))))])
                (set! pfuns (push pfuns (fn (car (exp-t e)) (length (la-ins x))))) 
                (out-f (car (exp-t e)) x c) '())]
     [("la") (la (car (exp-t e)) (second (exp-t e)))]
