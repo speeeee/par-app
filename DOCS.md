@@ -162,4 +162,69 @@ This is the reason for the somewhat awkward syntax.  In LISP, the expression, `*
 
 Finally, despite being called forks, they do have their differences from forks in languages like J.  Due to everything in J taking at most two arguments, a fork in J can have only two functions, where the result is applied to another 2-argument function.  In Par-App, a fork can have as many functions with as many arguments given that they all have the same amount of arguments.
 
+# Partial application
+
+When doing something like defining a function, it may be unnecessary and sometimes verbose  to explicitly write variables into the definition.  Sometimes, this can make definitions more clear to read.  One example is when making an alias:
+
+```
+def:(alias+ la:((x y) +:(x y)))
+def:(alias+ +)
+```
+
+The second definition is much more concise and also more readable.  In this specific instance, nothing special happens, considering functions are named lambdas (as mentioned before).  This also holds in most LISP dialects.  However, aliases are not the only instance where implicit variables can be more readable.
+
+Consider that not only is it needed that two numbers are added together, but also the result is printed.  Here is the definition with a lambda:
+
+```
+def:(prnsum la:((x y) prn:+:(x y)))
+```
+
+This can also be done without parameters as well:
+
+```
+def:(prnsum prn:+)
+```
+**NOTE**: `prn` doesn't exist yet.
+
+At first, it may look as if the lambda `+` itself is being printed, though that would be
+`prn:(+)`.  `:` has a special case for when the right argument is a lambda.  Here is the example rewritten with explicit variables:
+
+```
+def:(prnsum prn:la:((x y) +:(x y)))
+```
+
+What happens, is that when this case is found, the lambda is essentially 'lifted' to the top of the expression.  The above is rewritten as this:
+
+```
+def:(prnsum la:((x y) prn:+:(x y)))
+```
+
+What this means is that given that the right argument of `:` is a lambda, the result will be another lambda.  This means that `:` acts exactly as it would, just with an amount of required arguments.  This is the final definition of `prnsum`.  
+
+# Partial application and forks
+
+It was mentioned earlier that a list of functions is not by default parsed as a fork.  It only is when it is the left argument of `:` that it is changed to a fork.  This actually introduces a small issue when using partial application.  Consider the expression,
+`f(x,y) = (x + y) * (x - y)`.  At first, it may seem possible to write it like this:
+
+```
+def:(f +:(+ -))
+```
+
+This is actually incorrect.  Because it is not on the left side of `:` and because it is not, itself, a lambda, `(+ -)` is parsed as a list.  This is, of course, problamatic because this results in `+` actually adding the two functions together, which is not possible.  However, there is a function that is used to explicitly make a list into a fork, called `#`.
+
+```
+[#:(+ -)]:(1 2)
+(+ -):(1 2)
+```
+
+These two expressions are the exact same.  One uses the `#` function while the other satisfies the requirements of `:` for it to make it a fork.  Using `#`, the expression,
+`f(x,y) = (x + y) * (x - y)`, is written *correctly* as this:
+
+```
+def:(f +:#:(+ -))
+```
+
+This creates the correct lambda.
+
+
 **NOTE:** this is the end of the documentation for now, but there should be more later.
