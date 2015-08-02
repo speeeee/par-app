@@ -24,8 +24,8 @@
 
 (define pfuns (list (fn "+" 2) (fn "-" 2) (fn "*" 2)
                     (fn "rev" 1) (fn "def" 2)
-                    (fn "la" 2)))
-(define spec (list "def" "la"))
+                    (fn "la" 2) (fn "#" 1)))
+(define spec (list "def" "la" "#"))
 #;(define funs (list (list "+" 2)))
 
 (define (ins q) (if (fn? q) (fn-ins q) (length (la-ins q))))
@@ -109,13 +109,14 @@
         [else (cp (cdr stk) (push n (car stk)))]))
 (define (rem-plist a) (if (equal? (v-type a) "PList") (map rem-plist (v-val a))
                           (if (equal? (v-type a) "List") (v (map rem-plist (v-val a)) "List") a)))
-
+; add function-composition, point-free definitions, and idef (inline def).
 (define (app-spec e)
   (case (fn-name (exp-h e))
     [("def") (let ([x (if (la? (second (exp-t e))) (second (exp-t e)) (exp->la (second (exp-t e))))])
                (set! pfuns (push pfuns (fn (car (exp-t e)) (length (la-ins x))))) 
                (out-f (car (exp-t e)) x c) '())]
     [("la") (la (car (exp-t e)) (second (exp-t e)))]
+    [("#") (if (list? (exp-t e)) (fork (exp-t e)) (exp-t e))]
     [else e]))
 
 (define (mk-exprs lst) (if (list? lst) (me (reverse lst) '()) lst))
@@ -125,9 +126,12 @@
         [#;(and (v? (car lst)) (equal? (v-val (car lst)) ":"))
          (equal? (car lst) ":")
          (me (cddr lst) (push (ret-pop n) (let ([e (exp (let ([x (mk-exprs (cadr lst))])
-                                                           (if (list? x) (fork x) x)) (pop n))])
+                                                          (if (list? x) (fork x) x)) (pop n))])
+                          (if (or (fn? (exp-t e)) (la? (exp-t e)))
+                              (let ([f (mk-args (ins (exp-t e)))])
+                              (la f (exp (exp-h e) (if (la? (exp-t e)) (app-la (exp (exp-t e) f)) (exp (exp-t e) f)))))
                           (if (la? (exp-h e)) (app-la e) 
-                              (if (member (fn-name (exp-h e)) spec) (app-spec e) e)))))]
+                              (if (member (fn-name (exp-h e)) spec) (app-spec e) e))))))]
         [else (me (cdr lst) (push n (car lst)))]))
 
 (define (br-list l)
