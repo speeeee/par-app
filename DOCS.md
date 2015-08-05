@@ -162,7 +162,7 @@ This is the reason for the somewhat awkward syntax.  In LISP, the expression, `*
 
 Finally, despite being called forks, they do have their differences from forks in languages like J.  Due to everything in J taking at most two arguments, a fork in J can have only two functions, where the result is applied to another 2-argument function.  In Par-App, a fork can have as many functions with as many arguments given that they all have the same amount of arguments.
 
-# Partial application
+# Point-free style
 
 When doing something like defining a function, it may be unnecessary and sometimes verbose  to explicitly write variables into the definition.  Sometimes, this can make definitions more clear to read.  One example is when making an alias:
 
@@ -201,7 +201,7 @@ def:(prnsum la:((x y) prn:+:(x y)))
 
 What this means is that given that the right argument of `:` is a lambda, the result will be another lambda.  This means that `:` acts exactly as it would, just with an amount of required arguments.  This is the final definition of `prnsum`.  
 
-# Partial application and forks
+# Point-free style and forks
 
 It was mentioned earlier that a list of functions is not by default parsed as a fork.  It only is when it is the left argument of `:` that it is changed to a fork.  This actually introduces a small issue when using partial application.  Consider the expression,
 `f(x,y) = (x + y) * (x - y)`.  At first, it may seem possible to write it like this:
